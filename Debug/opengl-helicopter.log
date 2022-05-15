@@ -1,8 +1,0 @@
-﻿  main.c
-C:\Users\GammaWave\Documents\Code\opengl-helicopter\src\main.c(401,43): warning C4244: '=': conversion from 'int' to 'GLfloat', possible loss of data
-C:\Users\GammaWave\Documents\Code\opengl-helicopter\src\main.c(404,45): warning C4244: '=': conversion from 'int' to 'GLfloat', possible loss of data
-C:\Users\GammaWave\Documents\Code\opengl-helicopter\src\main.c(407,44): warning C4244: '=': conversion from 'int' to 'GLfloat', possible loss of data
-C:\Users\GammaWave\Documents\Code\opengl-helicopter\src\main.c(410,45): warning C4244: '=': conversion from 'int' to 'GLfloat', possible loss of data
-  opengl-helicopter.vcxproj -> C:\Users\GammaWave\Documents\Code\opengl-helicopter\Debug\opengl-helicopter.exe
-  C:\Users\GammaWave\Documents\Code\opengl-helicopter\freeglut\bin\freeglut.dll
-  1 File(s) copied
