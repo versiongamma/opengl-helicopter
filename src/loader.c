@@ -3,6 +3,7 @@
  ******************************************************************************/
 
 #define _CRT_SECURE_NO_WARNINGS
+#pragma warning (disable : 6011 6054 6031 6001 6386) // God can't the compiler just let us destroy our computers without bombarding us with warnings
 #include "loader.h"
 
  /*
@@ -11,9 +12,9 @@
 	 Note: Any object loaded via this function must eventually be freed via freeMeshObject(): a mesh object
 	 returned by this function CANNOT be released with free().
  */
-meshObject* loadMeshObject(char* fileName) {
+MeshObject* loadMeshObject(char* fileName) {
 	FILE* inFile;
-	meshObject* object;
+	MeshObject* object;
 	char line[512];					// Line currently being parsed 
 	char keyword[10];				// Keyword currently being parsed
 	int currentVertexIndex = 0;		// 0-based index of the vertex currently being parsed
@@ -28,7 +29,7 @@ meshObject* loadMeshObject(char* fileName) {
 	}
 
 	// Allocate and initialize a new Mesh Object.
-	object = malloc(sizeof(meshObject));
+	object = malloc(sizeof(MeshObject));
 	object->vertexCount = 0;
 	object->vertices = NULL;
 	object->texCoordCount = 0;
@@ -56,7 +57,7 @@ meshObject* loadMeshObject(char* fileName) {
 	if (object->vertexCount > 0)object->vertices = malloc(sizeof(Vec3) * object->vertexCount);
 	if (object->texCoordCount > 0) object->texCoords = malloc(sizeof(Vec2) * object->texCoordCount);
 	if (object->normalCount > 0) object->normals = malloc(sizeof(Vec3) * object->normalCount);
-	if (object->faceCount > 0) object->faces = malloc(sizeof(meshObjectFace) * object->faceCount);
+	if (object->faceCount > 0) object->faces = malloc(sizeof(MeshObjectFace) * object->faceCount);
 
 	// Parse the file again, reading the actual vertices, texture coordinates, normals, and faces.
 	rewind(inFile);
@@ -93,14 +94,14 @@ meshObject* loadMeshObject(char* fileName) {
 /*
 	Render the faces of the specified Mesh Object in OpenGL.
 */
-void renderMeshObject(meshObject* object) {
+void renderMeshObject(MeshObject* object) {
 	for (int faceNo = 0; faceNo < object->faceCount; faceNo++) {
-		meshObjectFace face = object->faces[faceNo];
+		MeshObjectFace face = object->faces[faceNo];
 		if (face.pointCount >= 3) {
 			glBegin(GL_POLYGON);
 
 			for (int pointNo = 0; pointNo < face.pointCount; pointNo++) {
-				meshObjectFacePoint point = face.points[pointNo];
+				MeshObjectFacePoint point = face.points[pointNo];
 
 				if (point.normalIndex >= 0) {
 					Vec3 normal = object->normals[point.normalIndex];
@@ -124,7 +125,7 @@ void renderMeshObject(meshObject* object) {
 /*
 	Initialise the specified Mesh Object Face from a string of face data in the Wavefront OBJ file format.
 */
-void initMeshObjectFace(meshObjectFace* face, char* faceData, int maxFaceDataLength) {
+void initMeshObjectFace(MeshObjectFace* face, char* faceData, int maxFaceDataLength) {
 	int maxPoints = 0;
 	int inWhitespace = 0;
 	const char* delimiter = " ";
@@ -151,11 +152,11 @@ void initMeshObjectFace(meshObjectFace* face, char* faceData, int maxFaceDataLen
 	// Parse the input string to extract actual face points (if we're expecting any).
 	face->pointCount = 0;
 	if (maxPoints > 0) {
-		face->points = malloc(sizeof(meshObjectFacePoint) * maxPoints);
+		face->points = malloc(sizeof(MeshObjectFacePoint) * maxPoints);
 
 		token = strtok_s(faceData, delimiter, &context);
 		while ((token != NULL) && (face->pointCount < maxPoints)) {
-			meshObjectFacePoint parsedPoint = { 0, 0, 0 }; // At this point we're working with 1-based indices from the OBJ file.
+			MeshObjectFacePoint parsedPoint = { 0, 0, 0 }; // At this point we're working with 1-based indices from the OBJ file.
 
 			if (strcmp(token, "f") != 0) {
 				// Attempt to parse this face point in the format "v/t[/n]" (vertex, texture, and optional normal).
@@ -173,7 +174,7 @@ void initMeshObjectFace(meshObjectFace* face, char* faceData, int maxFaceDataLen
 					parsedPoint.texCoordIndex = (parsedPoint.texCoordIndex > 0) ? parsedPoint.texCoordIndex - 1 : -1;
 					parsedPoint.normalIndex = (parsedPoint.normalIndex > 0) ? parsedPoint.normalIndex - 1 : -1;
 
-					memcpy_s(&face->points[face->pointCount], sizeof(meshObjectFacePoint), &parsedPoint, sizeof(meshObjectFacePoint));
+					memcpy_s(&face->points[face->pointCount], sizeof(MeshObjectFacePoint), &parsedPoint, sizeof(MeshObjectFacePoint));
 					face->pointCount++;
 				}
 			}
@@ -186,7 +187,7 @@ void initMeshObjectFace(meshObjectFace* face, char* faceData, int maxFaceDataLen
 			free(face->points);
 			face->points = NULL;
 		} else if (face->pointCount < maxPoints) {
-			realloc(face->points, sizeof(meshObjectFacePoint) * face->pointCount);
+			realloc(face->points, sizeof(MeshObjectFacePoint) * face->pointCount);
 		}
 	} else {
 		face->points = NULL;
@@ -196,7 +197,7 @@ void initMeshObjectFace(meshObjectFace* face, char* faceData, int maxFaceDataLen
 /*
 	Free the specified Mesh Object, including all of its vertices, texture coordinates, normals, and faces.
 */
-void freeMeshObject(meshObject* object) {
+void freeMeshObject(MeshObject* object) {
 	if (object != NULL) {
 		free(object->vertices);
 		free(object->texCoords);
@@ -216,7 +217,6 @@ void freeMeshObject(meshObject* object) {
 
 /******************************************************************************
  * PPM Object Loader Implementation
- * Load a binary ppm file into an OpenGL texture and return the OpenGL texture reference ID
  ******************************************************************************/
 
 int loadPPM(char* filename) {

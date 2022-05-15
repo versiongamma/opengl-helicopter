@@ -27,6 +27,9 @@
     <ClCompile Include="src\loader.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\misc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\main.h">
@@ -39,6 +42,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\loader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\misc.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

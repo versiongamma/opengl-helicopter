@@ -15,7 +15,6 @@ void drawPill(Helicopter* helicopter, Vec3 offset, GLfloat angle, GLfloat radius
 
 	glPushMatrix();
 	glTranslatef(helicopter->position.x, helicopter->position.y, helicopter->position.z);
-	//glRotatef(angle, 0, 1, 0);
 	glRotatef(helicopter->angle + angle, 0, 1, 0);
 	glTranslatef(offset.x, offset.y, offset.z);
 	glRotated(90, 0, 1, 0);
@@ -25,7 +24,6 @@ void drawPill(Helicopter* helicopter, Vec3 offset, GLfloat angle, GLfloat radius
 
 	glPushMatrix();
 	glTranslatef(helicopter->position.x, helicopter->position.y, helicopter->position.z);
-	//glRotatef(angle, 0, 1, 0);
 	glRotatef(helicopter->angle + angle, 0, 1, 0);
 	glTranslatef(offset.x, offset.y, offset.z);
 	glTranslated(height / 2.0f, 0, 0);
@@ -34,7 +32,6 @@ void drawPill(Helicopter* helicopter, Vec3 offset, GLfloat angle, GLfloat radius
 
 	glPushMatrix();
 	glTranslatef(helicopter->position.x, helicopter->position.y, helicopter->position.z);
-	//glRotatef(angle, 0, 1, 0);
 	glRotatef(helicopter->angle + angle, 0, 1, 0);
 	glTranslatef(offset.x, offset.y, offset.z);
 	glTranslated(-height / 2.0f, 0, 0);
@@ -69,7 +66,7 @@ void drawRotorGuard(Helicopter* helicopter, Vec3 offset, GLUquadricObj* cylinder
 	glPopMatrix();
 }
 
-void helicopterDisplay(Helicopter* helicopter, GLUquadricObj* cylinderQuadric, GLUquadricObj* sphereQuadric, GLUquadricObj* diskQuadric) {
+void helicopterDisplay(Helicopter* helicopter, GLUquadricObj* cylinderQuadric, GLUquadricObj* sphereQuadric) {
 	const double theta = -toRad(helicopter->angle);
 
 	Vec3 cameraPosition = (Vec3) {

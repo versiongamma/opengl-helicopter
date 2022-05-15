@@ -1,23 +1,19 @@
 #pragma once
 #include <stdio.h>
 #include <freeglut.h>
-
 #include "vecmath.h"
-/******************************************************************************
- * Mesh Object Loader Setup and Prototypes
- ******************************************************************************/
 
 
 typedef struct {
 	int vertexIndex;	// Index of this vertex in the object's vertices array
 	int texCoordIndex; // Index of the texture coordinate for this vertex in the object's texCoords array
 	int normalIndex;	// Index of the normal for this vertex in the object's normals array
-} meshObjectFacePoint;
+} MeshObjectFacePoint;
 
 typedef struct {
 	int pointCount;
-	meshObjectFacePoint* points;
-} meshObjectFace;
+	MeshObjectFacePoint* points;
+} MeshObjectFace;
 
 typedef struct {
 	int vertexCount;
@@ -27,10 +23,14 @@ typedef struct {
 	int normalCount;
 	Vec3* normals;
 	int faceCount;
-	meshObjectFace* faces;
-} meshObject;
+	MeshObjectFace* faces;
+} MeshObject;
 
-meshObject* loadMeshObject(char* fileName);
-void renderMeshObject(meshObject* object);
-void initMeshObjectFace(meshObjectFace* face, char* faceData, int faceDataLength);
-void freeMeshObject(meshObject* object);
+// Loads a Wavefront OBJ mesh file from a given file. Returns a pointer to the loaded mesh object
+MeshObject* loadMeshObject(char* fileName);
+// Renders a given mesh object
+void renderMeshObject(MeshObject* object);
+void initMeshObjectFace(MeshObjectFace* face, char* faceData, int faceDataLength);
+void freeMeshObject(MeshObject* object);
+// Load a binary ppm file into an OpenGL texture and return the OpenGL texture reference ID
+int loadPPM(char* filename);

@@ -10,5 +10,9 @@ GLfloat angleClamp(GLfloat angle) {
 
 Vec3 rotateVectorXZ(Vec3 vector, GLfloat angle) {
 	const double theta = toRad(angle);
-	return (Vec3){ vector.x * cos(theta) - vector.z * sin(theta), vector.y, vector.x * sin(theta) + vector.z * cos(theta) }; 
+	return (Vec3) { 
+		vector.x * cos(theta) - vector.z * sin(theta), 
+		vector.y, 
+		vector.x * sin(theta) + vector.z * cos(theta) 
+	}; 
 }
