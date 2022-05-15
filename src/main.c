@@ -13,134 +13,17 @@
  *
  ******************************************************************************/
 
-#include <Windows.h>
-#include <freeglut.h>
-#include <math.h>
-
- /******************************************************************************
-  * Animation & Timing Setup
-  ******************************************************************************/
-
-  // Target frame rate (number of Frames Per Second).
-#define TARGET_FPS 60				
+#include "main.h"
 
 // Ideal time each frame should be displayed for (in milliseconds).
 const unsigned int FRAME_TIME = 1000 / TARGET_FPS;
-
 // Frame time in fractional seconds.
 // Note: This is calculated to accurately reflect the truncated integer value of
 // FRAME_TIME, which is used for timing, rather than the more accurate fractional
 // value we'd get if we simply calculated "FRAME_TIME_SEC = 1.0f / TARGET_FPS".
 const float FRAME_TIME_SEC = (1000 / TARGET_FPS) / 1000.0f;
-
 // Time we started preparing the current frame (in milliseconds since GLUT was initialized).
 unsigned int frameStartTime = 0;
-
-/******************************************************************************
- * Some Simple Definitions of Motion
- ******************************************************************************/
-
-#define MOTION_NONE 0				// No motion.
-#define MOTION_CLOCKWISE -1			// Clockwise rotation.
-#define MOTION_ANTICLOCKWISE 1		// Anticlockwise rotation.
-#define MOTION_BACKWARD -1			// Backward motion.
-#define MOTION_FORWARD 1			// Forward motion.
-#define MOTION_LEFT -1				// Leftward motion.
-#define MOTION_RIGHT 1				// Rightward motion.
-#define MOTION_DOWN -1				// Downward motion.
-#define MOTION_UP 1					// Upward motion.
-
- // Represents the motion of an object on four axes (Yaw, Surge, Sway, and Heave).
- // 
- // You can use any numeric values, as specified in the comments for each axis. However,
- // the MOTION_ definitions offer an easy way to define a "unit" movement without using
- // magic numbers (e.g. instead of setting Surge = 1, you can set Surge = MOTION_FORWARD).
- //
-typedef struct {
-	int Yaw;		// Turn about the Z axis	[<0 = Clockwise, 0 = Stop, >0 = Anticlockwise]
-	int Surge;		// Move forward or back		[<0 = Backward,	0 = Stop, >0 = Forward]
-	int Sway;		// Move sideways (strafe)	[<0 = Left, 0 = Stop, >0 = Right]
-	int Heave;		// Move vertically			[<0 = Down, 0 = Stop, >0 = Up]
-} motionstate4_t;
-
-/******************************************************************************
- * Keyboard Input Handling Setup
- ******************************************************************************/
-
- // Represents the state of a single keyboard key.Represents the state of a single keyboard key.
-typedef enum {
-	KEYSTATE_UP = 0,	// Key is not pressed.
-	KEYSTATE_DOWN		// Key is pressed down.
-} keystate_t;
-
-// Represents the states of a set of keys used to control an object's motion.
-typedef struct {
-	keystate_t MoveForward;
-	keystate_t MoveBackward;
-	keystate_t MoveLeft;
-	keystate_t MoveRight;
-	keystate_t MoveUp;
-	keystate_t MoveDown;
-	keystate_t TurnLeft;
-	keystate_t TurnRight;
-} motionkeys_t;
-
-// Current state of all keys used to control our "player-controlled" object's motion.
-motionkeys_t motionKeyStates = {
-	KEYSTATE_UP, KEYSTATE_UP, KEYSTATE_UP, KEYSTATE_UP,
-	KEYSTATE_UP, KEYSTATE_UP, KEYSTATE_UP, KEYSTATE_UP };
-
-// How our "player-controlled" object should currently be moving, solely based on keyboard input.
-//
-// Note: this may not represent the actual motion of our object, which could be subject to
-// other controls (e.g. mouse input) or other simulated forces (e.g. gravity).
-motionstate4_t keyboardMotion = { MOTION_NONE, MOTION_NONE, MOTION_NONE, MOTION_NONE };
-
-// Define all character keys used for input (add any new key definitions here).
-// Note: USE ONLY LOWERCASE CHARACTERS HERE. The keyboard handler provided converts all
-// characters typed by the user to lowercase, so the SHIFT key is ignored.
-
-#define KEY_MOVE_FORWARD	'w'
-#define KEY_MOVE_BACKWARD	's'
-#define KEY_MOVE_LEFT		'a'
-#define KEY_MOVE_RIGHT		'd'
-#define KEY_RENDER_FILL		'l'
-#define KEY_EXIT			27 // Escape key.
-
-// Define all GLUT special keys used for input (add any new key definitions here).
-
-#define SP_KEY_MOVE_UP		GLUT_KEY_UP
-#define SP_KEY_MOVE_DOWN	GLUT_KEY_DOWN
-#define SP_KEY_TURN_LEFT	GLUT_KEY_LEFT
-#define SP_KEY_TURN_RIGHT	GLUT_KEY_RIGHT
-
-
-/******************************************************************************
- * GLUT Callback Prototypes
- ******************************************************************************/
-
-void display(void);
-void reshape(int width, int h);
-void keyPressed(unsigned char key, int x, int y);
-void specialKeyPressed(int key, int x, int y);
-void keyReleased(unsigned char key, int x, int y);
-void specialKeyReleased(int key, int x, int y);
-void idle(void);
-
-/******************************************************************************
- * Animation-Specific Function Prototypes (add your own here)
- ******************************************************************************/
-
-void main(int argc, char **argv);
-void init(void);
-void think(void);
-void initLights(void);
-
-void drawEye(enum Side side);
-void drawOrigin(void);
-void basicGround(void);
-
-double toRad(double degree) { return degree * (3.141592653 / 180.0); }
 
 /******************************************************************************
  * Animation-Specific Setup (Add your own definitions, constants, and globals here)
@@ -150,40 +33,22 @@ double toRad(double degree) { return degree * (3.141592653 / 180.0); }
 int renderFillEnabled = 1;
 
 //is the object to be drawn on the left (-x) or right (-y)
-enum Side {
-	leftSide = -1,
-	rightSide = 1,
-};
 
 // window dimensions
 GLint windowWidth = 800;
 GLint windowHeight = 600;
 
-// current camera position
-GLfloat cameraPosition[] = { 0, 1, 10 };
 
 // pointer to quadric objects
-GLUquadricObj  *sphereQuadric;
-GLUquadricObj  *cylinderQuadric;
+GLUquadricObj* sphereQuadric;
+GLUquadricObj* cylinderQuadric;
+GLUquadricObj* diskQuadric;
 
-//snowman hierachical model setup values
-//dimensions of the body
-#define BODY_RADIUS 2.0
-//dimensions of the head
-#define HEAD_RADIUS 1.5
-//dimensions of the eyes
-#define EYE_RADIUS 0.2
-
-//bowtie dimensions
-#define BOW_TIE_LENGTH 0.7
-#define BOW_TIE_WIDTH 0.2
-#define BAND_WIDTH 0.2
-
-
-GLfloat position[3] = { 0.0f, 0.0f, 0.0f };
+Helicopter helicopter;
 const float smSpeed = 2.0f; // Metres per second
-float heading = 0.0f;
 
+meshObject* loadedMesh;
+GLuint loadedTexture;
 
 /******************************************************************************
  * Entry Point (don't put anything except the main function here)
@@ -211,6 +76,7 @@ void main(int argc, char **argv)
 	glutKeyboardUpFunc(keyReleased);
 	glutSpecialUpFunc(specialKeyReleased);
 	glutIdleFunc(idle);
+	glutCloseFunc(close);
 
 	// Record when we started rendering the very first frame (which should happen after we call glutMainLoop).
 	frameStartTime = (unsigned int)glutGet(GLUT_ELAPSED_TIME);
@@ -238,39 +104,25 @@ void display(void)
 	// load the identity matrix into the model view matrix
 	glLoadIdentity();
 
-	//set up our camera - slightly up in the y so we can see the ground plane
-	gluLookAt(position[0], position[1], position[2] - 10, position[0], position[1], position[2], 0, 1, 0);
 
-	glPushMatrix();
-	glColor3f(1.0f, 1.0f, 1.0f);
-	glTranslatef(position[0], position[1], position[2]);
-	glRotated(heading, 0, 1, 0);
-	glutWireCube(1);
-	glPopMatrix();
+	helicopterDisplay(&helicopter, cylinderQuadric, sphereQuadric, diskQuadric);
+
+	glColor3f(0, 1, 0);
+	glTranslatef(10, 0, 0);
+	renderMeshObject(loadedMesh);
 
 	drawOrigin();
+	drawGround();
 
-	glColor3f(1.0f, 1.0f, 1.0f);
-
-	//only apply the transforms inside the push/pop to the snowman and ground
-	glPushMatrix();
-
-
-	//draw the ground
-	basicGround();
-
-	glPopMatrix();
-
-	// swap the drawing buffers
 	glutSwapBuffers();
 }
 
 /*
 	Called when the OpenGL window has been resized.
 */
-void reshape(int width, int h)
+void reshape(int width, int height)
 {
-	windowHeight = h;
+	windowHeight = height;
 	windowWidth = width;
 
 	glViewport(0, 0, windowWidth, windowHeight);
@@ -279,7 +131,7 @@ void reshape(int width, int h)
 
 	glLoadIdentity();
 
-	gluPerspective(60, (float)windowWidth / (float)windowHeight, 1, 20);
+	gluPerspective(60, (float)windowWidth / (float)windowHeight, 1, 100);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -465,6 +317,10 @@ void specialKeyReleased(int key, int x, int y)
 	}
 }
 
+void close(void) {
+	freeMeshObject(loadedMesh);
+}
+
 /*
 	Called by GLUT when it's not rendering a frame.
 
@@ -513,11 +369,15 @@ void init(void)
 	
 	initLights();
 
-	//create the quadric for drawing the sphere
 	sphereQuadric = gluNewQuadric();
-
-	//create the quadric for drawing the cylinder
 	cylinderQuadric = gluNewQuadric();
+	diskQuadric = gluNewQuadric();
+
+	helicopter.position = (Vec3) { 0.0f, 1.0f, 0.0f };
+	helicopter.angle = 0.0f;
+	helicopter.rotorAngle = 0.0f;
+
+	loadedMesh = loadMeshObject("assets/tree01.obj");
 }
 
 /*
@@ -534,18 +394,23 @@ void think(void) {
 		Keyboard motion handler: complete this section to make your "player-controlled"
 		object respond to keyboard input.
 	*/
+
+	Quat4 controlQuaternion = { 0, 0, 0, 0 };
+
 	if (keyboardMotion.Yaw != MOTION_NONE) {
-		heading += keyboardMotion.Yaw * 40 * FRAME_TIME_SEC;
+		controlQuaternion.w = keyboardMotion.Yaw;
 	}
 	if (keyboardMotion.Surge != MOTION_NONE) {
-		position[2] += keyboardMotion.Surge * smSpeed * FRAME_TIME_SEC; //20 m/sec
+		controlQuaternion.x = keyboardMotion.Surge;
 	}
 	if (keyboardMotion.Sway != MOTION_NONE) {
-		position[0] -= keyboardMotion.Sway * smSpeed * FRAME_TIME_SEC; //20 m/sec
+		controlQuaternion.z = keyboardMotion.Sway;
 	}
 	if (keyboardMotion.Heave != MOTION_NONE) {
-		position[1] += keyboardMotion.Heave * smSpeed * FRAME_TIME_SEC; //20 m/sec
+		controlQuaternion.y = keyboardMotion.Heave;
 	}
+
+	helicopterThink(&helicopter, controlQuaternion, FRAME_TIME_SEC );
 }
 
 /*
@@ -614,73 +479,49 @@ void drawOrigin(void)
 	glEnd();
 }
 
-
-/*
-  Draws a single eye. The side parameter determins whether it is the
-  left or right eye rendered
-*/
-void drawEye(enum Side side)
+void drawGround(void)
 {
-	glColor3f(0.3f, 0.3f, 0.3f);
-	//right eye
-	glPushMatrix();
-	glTranslated(0, HEAD_RADIUS * 0.25, 0.0);
-	//place the eyes at the right depth -front of face
-	glTranslated(0.0, 0.0, HEAD_RADIUS - EYE_RADIUS);
-	//locate on correct side of the head
-	glTranslated((HEAD_RADIUS / 2) * side, 0.0, 0.0);
-	gluSphere(sphereQuadric, EYE_RADIUS, 20, 20);
-	glPopMatrix();
-}
-
-/*
-  A simple ground plane in the XZ plane with vertex normals specified for lighting
-  the top face of the ground. The bottom face is not lit.
-*/
-void basicGround(void)
-{
-	glColor3d(0.1,0.9,0.2);
+	glColor3d(0.1,0.5,0.2);
 
 	glPushMatrix();
-	glTranslated(0, -BODY_RADIUS/2 , 0); //shifted this so looks like in snow
 
 	glBegin(GL_QUADS);
 	//back right corner
 	glNormal3d(0, 1, 0);
 	glVertex3d(0, 0, 0);
 	glNormal3d(0, 1, 0);
-	glVertex3d(10, 0, 0);
+	glVertex3d(50, 0, 0);
 	glNormal3d(0, 1, 0);
-	glVertex3d(10, 0, -10);
+	glVertex3d(50, 0, -50);
 	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, -10);
+	glVertex3d(0, 0, -50);
 	//front right corner
 	glNormal3d(0, 1, 0);
 	glVertex3d(0, 0, 0);
 	glNormal3d(0, 1, 0);
-	glVertex3d(10, 0, 0);
+	glVertex3d(50, 0, 0);
 	glNormal3d(0, 1, 0);
-	glVertex3d(10, 0, 10);
+	glVertex3d(50, 0, 50);
 	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, 10);
+	glVertex3d(0, 0, 50);
 	//front left corner
 	glNormal3d(0, 1, 0);
 	glVertex3d(0, 0, 0);
 	glNormal3d(0, 1, 0);
-	glVertex3d(-10, 0, 0);
+	glVertex3d(-50, 0, 0);
 	glNormal3d(0, 1, 0);
-	glVertex3d(-10, 0, 10);
+	glVertex3d(-50, 0, 50);
 	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, 10);
+	glVertex3d(0, 0, 50);
 	//back left corner
 	glNormal3d(0, 1, 0);
 	glVertex3d(0, 0, 0);
 	glNormal3d(0, 1, 0);
-	glVertex3d(-10, 0, 0);
+	glVertex3d(-50, 0, 0);
 	glNormal3d(0, 1, 0);
-	glVertex3d(-10, 0, -10);
+	glVertex3d(-50, 0, -50);
 	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, -10);
+	glVertex3d(0, 0, -50);
 
 	glEnd();
 
