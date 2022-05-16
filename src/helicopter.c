@@ -1,12 +1,12 @@
 #include "helicopter.h"
 
-void helicopterMove(Helicopter* helicopter, Vec3 newPositionOffset) {
-	Vec3 rotatedPositionOffset = rotateVectorXZ(newPositionOffset, -helicopter->angle);
-
+void helicopterMove(Helicopter* helicopter, Vec3 velocity) {
+	Vec3 rotatedVelocity = rotateVectorXZ(velocity, -helicopter->angle);
+	helicopter->velocity = vec3Lerp(helicopter->velocity, rotatedVelocity, 0.15);
 	helicopter->position = (Vec3) { 
-		helicopter->position.x + rotatedPositionOffset.x,
-		helicopter->position.y + rotatedPositionOffset.y,
-		helicopter->position.z + rotatedPositionOffset.z
+		helicopter->position.x + helicopter->velocity.x,
+		helicopter->position.y + helicopter->velocity.y,
+		helicopter->position.z + helicopter->velocity.z
 	};
 }
 
@@ -95,7 +95,8 @@ void helicopterDisplay(Helicopter* helicopter, GLUquadricObj* cylinderQuadric, G
 }
 
 void helicopterThink(Helicopter* helicopter, Quat4 controlQuaternion, GLfloat DeltaTime) {
-	helicopter->angle = angleClamp(helicopter->angle + controlQuaternion.w, YAW_SPEED * DeltaTime);
+	helicopter->angularVelocity = lerp(helicopter->angularVelocity, controlQuaternion.w * YAW_SPEED * DeltaTime, 0.15);
+	helicopter->angle = angleClamp(helicopter->angle + helicopter->angularVelocity);
 	helicopter->rotorAngle = angleClamp(helicopter->rotorAngle + ROTOR_SPEED * DeltaTime);
 
 	helicopterMove(

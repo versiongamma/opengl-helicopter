@@ -23,5 +23,9 @@ typedef struct QUATERNION {
 GLfloat toRad(GLfloat degree);
 // Clamps a given angle between 0 and 360 degrees
 GLfloat angleClamp(GLfloat angle);
+// Linear interpolation between 2 floats
+GLfloat lerp(GLfloat a, GLfloat b, GLfloat t);
+// Linear interpolation between 2 vectors
+Vec3 vec3Lerp(Vec3 a, Vec3 b, GLfloat t);
 // Rotates a given vector around the XZ plane by the given angle in degrees
 Vec3 rotateVectorXZ(Vec3 vector, GLfloat angle);

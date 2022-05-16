@@ -33,6 +33,7 @@ GLUquadricObj* cylinderQuadric;
 Helicopter helicopter;
 
 MeshObject* loadedMesh;
+GLuint groundTexture;
 
 /******************************************************************************
  * Entry Point (don't put anything except the main function here)
@@ -142,8 +143,7 @@ void idle(void)
  /*
 	 Initialise OpenGL and set up our scene before we begin the render loop.
  */
-void init(void)
-{
+void init(void) {
 	
 	// enable depth testing
 	glEnable(GL_DEPTH_TEST);
@@ -158,10 +158,12 @@ void init(void)
 	cylinderQuadric = gluNewQuadric();
 
 	helicopter.position = (Vec3) { 0.0f, 1.0f, 0.0f };
+	helicopter.velocity = (Vec3) { 0, 0, 0 };
 	helicopter.angle = 0.0f;
 	helicopter.rotorAngle = 0.0f;
 
 	loadedMesh = loadMeshObject("assets/tree01.obj");
+	groundTexture = loadPPM("assets/ground_color.PPM");
 }
 
 /*
@@ -207,8 +209,8 @@ void think(void) {
 void initLights(void)
 {
 	// Simple lighting setup
-	GLfloat globalAmbient[] = { 0.4f, 0.4f, 0.4f, 1 };
-	GLfloat lightPosition[] = { 5.0f, 5.0f, 5.0f, 1.0f };
+	GLfloat globalAmbient[] = { 0.1f, 0.1f, 0.1f, 1 };
+	GLfloat lightPosition[] = { 5, 5, 5, 1.0f };
 	GLfloat ambientLight[] = { 0, 0, 0, 1 };
 	GLfloat diffuseLight[] = { 1, 1, 1, 1 };
 	GLfloat specularLight[] = { 1, 1, 1, 1 };
@@ -265,49 +267,36 @@ void drawOrigin(void)
 
 void drawGround(void)
 {
-	glColor3d(0.1,0.5,0.2);
+	// glColor3d(0.1,0.5,0.2);
+	glColor3f(1, 1, 1);
+
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, groundTexture);
 
 	glPushMatrix();
 
 	glBegin(GL_QUADS);
-	//back right corner
-	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, 0);
-	glNormal3d(0, 1, 0);
-	glVertex3d(250, 0, 0);
-	glNormal3d(0, 1, 0);
-	glVertex3d(250, 0, -250);
-	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, -250);
-	//front right corner
-	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, 0);
-	glNormal3d(0, 1, 0);
-	glVertex3d(250, 0, 0);
-	glNormal3d(0, 1, 0);
-	glVertex3d(250, 0, 250);
-	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, 250);
-	//front left corner
-	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, 0);
-	glNormal3d(0, 1, 0);
-	glVertex3d(-250, 0, 0);
-	glNormal3d(0, 1, 0);
-	glVertex3d(-250, 0, 250);
-	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, 250);
-	//back left corner
-	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, 0);
-	glNormal3d(0, 1, 0);
-	glVertex3d(-250, 0, 0);
-	glNormal3d(0, 1, 0);
-	glVertex3d(-250, 0, -250);
-	glNormal3d(0, 1, 0);
-	glVertex3d(0, 0, -250);
+
+	for (GLint x = -250; x <= 250; x += 10) {
+		for (GLint z = -250; z <= 250; z += 10) {
+			glNormal3d(0, 1, 0);
+			glTexCoord2f(0, 0);
+			glVertex3d(x, 0, z);
+			glNormal3d(0, 1, 0);
+			glTexCoord2f(1, 0);
+			glVertex3d(x + 10, 0, z);
+			glNormal3d(0, 1, 0);
+			glTexCoord2f(1, 1);
+			glVertex3d(x + 10, 0, z + 10);
+			glNormal3d(0, 1, 0);
+			glTexCoord2f(0, 1);
+			glVertex3d(x, 0, z + 10);
+		}
+	}
 
 	glEnd();
 
 	glPopMatrix();
+
+	glDisable(GL_TEXTURE_2D);
 }
