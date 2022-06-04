@@ -33,5 +33,5 @@ void init(void);
 void think(void);
 void initLights(void);
 
-void drawOrigin(void);
 void drawGround(void);
+void drawSky(void);

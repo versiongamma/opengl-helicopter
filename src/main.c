@@ -92,11 +92,8 @@ void display(void)
 
 	helicopterDisplay(&helicopter, cylinderQuadric, sphereQuadric);
 
-	glColor3f(0, 1, 0);
 	glTranslatef(10, 0, 0);
 	renderMeshObject(loadedMesh);
-
-	drawOrigin();
 	drawGround();
 
 	glutSwapBuffers();
@@ -147,10 +144,6 @@ void init(void) {
 	
 	// enable depth testing
 	glEnable(GL_DEPTH_TEST);
-
-	// set background color to be black
-	glClearColor(0, 0, 0, 1.0);
-
 	
 	initLights();
 
@@ -210,7 +203,7 @@ void initLights(void)
 {
 	// Simple lighting setup
 	GLfloat globalAmbient[] = { 0.1f, 0.1f, 0.1f, 1 };
-	GLfloat lightPosition[] = { 5, 5, 5, 1.0f };
+	GLfloat lightPosition[] = { 0, 0, 0, 1.0f };
 	GLfloat ambientLight[] = { 0, 0, 0, 1 };
 	GLfloat diffuseLight[] = { 1, 1, 1, 1 };
 	GLfloat specularLight[] = { 1, 1, 1, 1 };
@@ -223,74 +216,55 @@ void initLights(void)
 	glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
 	glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight);
+	//glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 1.0);
+
+	glLightfv(GL_LIGHT1, GL_POSITION, (GLfloat[4]) { 0, 0, 0, 1 });
+	glLightfv(GL_LIGHT1, GL_AMBIENT, ambientLight);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, (GLfloat[4]) { 1, 1, 0.2, 1 });
+	glLightfv(GL_LIGHT1, GL_SPECULAR, specularLight);
+
+	glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 45.0f);
+	//glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, (GLfloat[4]) { 1, 2, 0, 1 });
+
 
 	// Enable lighting
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
+	//glEnable(GL_LIGHT1);
 
 	// Make GL normalize the normal vectors we supply.
 	glEnable(GL_NORMALIZE);
 
-	// Enable use of simple GL colours as materials.
-	glEnable(GL_COLOR_MATERIAL);
 }
 
-/******************************************************************************/
+/****************************************************************************/
 
-
-/*
-   Draw an origin marker for modelling purposes
- */
-void drawOrigin(void)
-{
-	glColor3f(0.0f, 1.0f, 1.0f);
-	glutWireSphere(0.1, 10, 10);
-	glBegin(GL_LINES);
-
-	//x axis -red
-	glColor3f(1.0f, 0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	glVertex3f(2.0f, 0.0f, 0.0f);
-
-	//y axis -green
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	glVertex3f(0.0f, 2.0f, 0.0f);
-
-	//z axis - blue
-	glColor3f(0.0f, 0.0f, 1.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 2.0f);
-
-	glEnd();
-}
-
-void drawGround(void)
-{
-	// glColor3d(0.1,0.5,0.2);
-	glColor3f(1, 1, 1);
+void drawGround(void) {
+	glMaterialfv(GL_FRONT, GL_AMBIENT, (GLfloat[4]) { 0, 0, 0, 0 });
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, (GLfloat[4]) { 1, 1, 1, 1 });
+	glMaterialfv(GL_FRONT, GL_SPECULAR, (GLfloat[4]) { 1, 1, 1, 1 });
+	glMaterialf(GL_FRONT, GL_SHININESS, 5);
 
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, groundTexture);
-
 	glPushMatrix();
 
 	glBegin(GL_QUADS);
 
-	for (GLint x = -250; x <= 250; x += 10) {
-		for (GLint z = -250; z <= 250; z += 10) {
+	for (GLint x = -250; x <= 250; x += 5) {
+		for (GLint z = -250; z <= 250; z += 5) {
 			glNormal3d(0, 1, 0);
 			glTexCoord2f(0, 0);
 			glVertex3d(x, 0, z);
 			glNormal3d(0, 1, 0);
 			glTexCoord2f(1, 0);
-			glVertex3d(x + 10, 0, z);
+			glVertex3d(x + 5, 0, z);
 			glNormal3d(0, 1, 0);
 			glTexCoord2f(1, 1);
-			glVertex3d(x + 10, 0, z + 10);
+			glVertex3d(x + 5, 0, z + 5);
 			glNormal3d(0, 1, 0);
 			glTexCoord2f(0, 1);
-			glVertex3d(x, 0, z + 10);
+			glVertex3d(x, 0, z + 5);
 		}
 	}
 
@@ -299,4 +273,8 @@ void drawGround(void)
 	glPopMatrix();
 
 	glDisable(GL_TEXTURE_2D);
+}
+
+void drawSky(void) {
+
 }

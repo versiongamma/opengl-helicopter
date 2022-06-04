@@ -11,7 +11,10 @@ void helicopterMove(Helicopter* helicopter, Vec3 velocity) {
 }
 
 void drawPill(Helicopter* helicopter, Vec3 offset, GLfloat angle, GLfloat radius, GLfloat height, GLUquadricObj* cylinderQuadric, GLUquadricObj* sphereQuadric) {
-	glColor3f(0.2, 0.2, 0.2);
+	glMaterialfv(GL_FRONT, GL_AMBIENT, (GLfloat[4]) { 0, 0, 0, 0 });
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, (GLfloat[4]) { 0.2, 0.2, 0.2, 1 });
+	glMaterialfv(GL_FRONT, GL_SPECULAR, (GLfloat[4]) { 1, 1, 1, 1 });
+	glMaterialf(GL_FRONT, GL_SHININESS, 80);
 
 	glPushMatrix();
 	glTranslatef(helicopter->position.x, helicopter->position.y, helicopter->position.z);
