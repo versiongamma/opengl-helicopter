@@ -3,8 +3,39 @@
  ******************************************************************************/
 
 #define _CRT_SECURE_NO_WARNINGS
-#pragma warning (disable : 6011 6054 6031 6001 6386) // God can't the compiler just let us destroy our computers without bombarding us with warnings
+#pragma warning (disable : 6387 6011 6054 6031 6001 6386) // God can't the compiler just let us destroy our computers without bombarding us with warnings
 #include "loader.h"
+
+char* generatePath(char* name) {
+	const unsigned int pathLength = strlen(DIR) + strlen(name) + 1;
+	char* path = malloc(pathLength);
+	sprintf_s(path, pathLength, "%s%s", DIR, name);
+	return path;
+}
+
+void loadTrees(GLfloat values[TREES_LENGTH][3]) {
+	FILE* file = fopen("assets/tree.loc", "r");
+
+	if (file == NULL) {
+		return NULL;
+	}
+
+	char line[32];
+	char* var;
+	unsigned int i = 0;
+	while (fgets(line, (unsigned)_countof(line), file)) {
+		unsigned int type = 0;
+		var = strtok(line, " ");
+		while (var != NULL) {
+			GLfloat value = atof(var);
+			values[i][type] = value;
+			var = strtok(NULL, " ");
+			++type;
+		}
+		++i;
+	}
+	fclose(file);
+}
 
  /*
 	 Loads a Mesh Object from the specified file. If the file cannot be opened, this returns a null reference.
@@ -22,7 +53,9 @@ MeshObject* loadMeshObject(char* fileName) {
 	int currentNormalIndex = 0;		// 0-based index of the normal currently being parsed
 	int currentFaceIndex = 0;		// 0-based index of the face currently being parsed
 
-	inFile = fopen(fileName, "r");
+	const char* filePath = generatePath(fileName);
+	inFile = fopen(filePath, "r");
+	free(filePath);
 
 	if (inFile == NULL) {
 		return NULL;
@@ -243,7 +276,9 @@ int loadPPM(char* filename) {
 	GLuint textureID;
 	glGenTextures(1, &textureID);
 
-	inFile = fopen(filename, "r");
+	const char* filepath = generatePath(filename);
+	inFile = fopen(filepath, "r");
+	free(filepath);
 
 	// read in the first header line
 	//    - "%[^\n]"  matches a string of all characters not equal to the new line character ('\n')
@@ -256,8 +291,6 @@ int loadPPM(char* filename) {
 		exit(0);
 	}
 
-	// we have a PPM file
-	printf("This is a PPM file\n");
 
 	// read in the first character of the next line
 	fscanf(inFile, "%c", &tempChar);
@@ -267,8 +300,6 @@ int loadPPM(char* filename) {
 		// read in the comment
 		fscanf(inFile, "%[^\n] ", header);
 
-		// print the comment
-		printf("%s\n", header);
 
 		// read in the first character of the next line
 		fscanf(inFile, "%c", &tempChar);
@@ -280,7 +311,6 @@ int loadPPM(char* filename) {
 	// read in the image hieght, width and the maximum value
 	fscanf(inFile, "%d %d %d", &width, &height, &maxVal);
 	// print out the information about the image file
-	printf("%d rows  %d columns  max value= %d\n", height, width, maxVal);
 
 	// compute the total number of pixels in the image
 	totalPixels = width * height;

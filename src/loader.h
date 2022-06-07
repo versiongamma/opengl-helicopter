@@ -3,6 +3,14 @@
 #include <freeglut.h>
 #include "vecmath.h"
 
+/*
+ * <loader.c/loader.h> Handles all logic for loading and using Wavefront Objects, PPM images,
+ * and tree array data
+ */
+
+
+#define DIR "assets/"
+#define TREES_LENGTH 935
 
 typedef struct {
 	int vertexIndex;	// Index of this vertex in the object's vertices array
@@ -26,6 +34,10 @@ typedef struct {
 	MeshObjectFace* faces;
 } MeshObject;
 
+// Loads the tree data from the trees file
+void loadTrees(GLfloat values[TREES_LENGTH][3]);
+// Generates an asset path from a given filename. Return value must be free()'d after use
+char* generatePath(char* name);
 // Loads a Wavefront OBJ mesh file from a given file. Returns a pointer to the loaded mesh object
 MeshObject* loadMeshObject(char* fileName);
 // Renders a given mesh object

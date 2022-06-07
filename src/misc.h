@@ -1,7 +1,17 @@
+#pragma once
 #include <freeglut.h>
+#include "vecmath.h"
+
+/*
+ * <misc.c/misc.h> Handles various miscellaneous functions required to 
+ * run the program, including event handling, reshape functions, and 
+ * other general types and functions
+ */
 
 #define DEFAULT_WINDOW_WIDTH 1200
 #define DEFAULT_WINDOW_HEIGHT 800
+
+typedef unsigned char bool;
 
 /******************************************************************************
  * Some Simple Definitions of Motion
@@ -70,6 +80,8 @@ typedef struct {
 #define SP_KEY_TURN_LEFT	GLUT_KEY_LEFT
 #define SP_KEY_TURN_RIGHT	GLUT_KEY_RIGHT
 
+// Returns a random number between a factor of -offset and offset.
+GLfloat offsetRand(GLfloat offset);
 // Called each time a character key (e.g. a letter, number, or symbol) is pressed.
 void keyPressed(unsigned char key, int x, int y);
 // Called each time a "special" key (e.g. an arrow key) is pressed.
@@ -78,8 +90,11 @@ void specialKeyPressed(int key, int x, int y);
 void keyReleased(unsigned char key, int x, int y);
 // Called each time a "special" key (e.g. an arrow key) is released.
 void specialKeyReleased(int key, int x, int y);
-
 // Returns the motion state of the keyboard input
 motionstate4_t getKeyboardState(void);
 // Called when the OpenGL window has been resized.
 void reshape(int width, int height);
+// Sets a basic RGB material colour with emission and shininess parameters
+void setMaterial(RGB colour, RGB emission, GLfloat shininess);
+// Draws text on the screen, takes an xy  position relative to the screen coordinates
+void drawText(char* text, Vec2 position);

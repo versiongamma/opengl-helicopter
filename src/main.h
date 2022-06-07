@@ -4,9 +4,15 @@
 #include <stdio.h>
 
 #include "helicopter.h"
+#include "tree.h"
 #include "vecmath.h"
 #include "loader.h"
 #include "misc.h"
+
+/*
+ * <main.c/main.h> Entrypoint of the program, handles window rendering, global state, 
+ * frame calculations, and rendering logic for basic scene objects
+ */
 
 /******************************************************************************
  * Animation & Timing Setup
@@ -31,7 +37,7 @@ void close(void);
 void main(int argc, char** argv);
 void init(void);
 void think(void);
-void initLights(void);
-
+void initLights(bool fullBright);
+void drawWater(void);
 void drawGround(void);
 void drawSky(void);

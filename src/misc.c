@@ -15,6 +15,10 @@ motionstate4_t keyboardMotion = { MOTION_NONE, MOTION_NONE, MOTION_NONE, MOTION_
 GLint windowWidth = DEFAULT_WINDOW_WIDTH;
 GLint windowHeight = DEFAULT_WINDOW_HEIGHT;
 
+GLfloat offsetRand(GLfloat offset) {
+	return (0.5f - (GLfloat)rand() / RAND_MAX) * offset;
+}
+
 void keyPressed(unsigned char key, int x, int y)
 {
 	switch (tolower(key)) {
@@ -196,8 +200,33 @@ void reshape(int width, int height)
 
 	glLoadIdentity();
 
-	gluPerspective(60, (float)windowWidth / (float)windowHeight, 1, 500);
+	gluPerspective(60, (float)windowWidth / (float)windowHeight, 2, 500);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+}
+
+void setMaterial(RGB colour, RGB emission, GLfloat shininess) {
+	glMaterialfv(GL_FRONT, GL_AMBIENT, (GLfloat[4]) { 0, 0, 0, 0 });
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, (GLfloat[4]) { colour.r / 255.f, colour.g / 255.f, colour.b / 255.f, 1 });
+	glMaterialfv(GL_FRONT, GL_SPECULAR, (GLfloat[4]) { 1, 1, 1, 1 });
+	glMaterialfv(GL_FRONT, GL_EMISSION, (GLfloat[4]) { emission.r, emission.g, emission.b, 1 });
+	glMaterialf(GL_FRONT, GL_SHININESS, shininess);
+}
+
+void drawText(char* text, Vec2 position) {
+	// https://stackoverflow.com/a/21923064
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glLoadIdentity();
+	gluOrtho2D(0.0, DEFAULT_WINDOW_WIDTH, 0.0, DEFAULT_WINDOW_HEIGHT);
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	glRasterPos2i(position.x, position.y);
+	glutBitmapString(GLUT_BITMAP_HELVETICA_18, text);
+	glMatrixMode(GL_PROJECTION);
+	glPopMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
 }

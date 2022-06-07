@@ -30,6 +30,9 @@
     <ClCompile Include="src\misc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\tree.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\main.h">
@@ -45,6 +48,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\misc.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\tree.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

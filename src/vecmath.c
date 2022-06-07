@@ -29,3 +29,7 @@ Vec3 vec3Lerp(Vec3 a, Vec3 b, GLfloat t) {
 
 	return (Vec3) { lerp(a.x, b.x, t), lerp(a.y, b.y, t), lerp(a.z, b.z, t) };
 }
+
+GLfloat vec3XZMagnitude(Vec3 vector) {
+	return sqrt(pow(fabs(vector.x), 2) + pow(fabs(vector.z), 2));
+}

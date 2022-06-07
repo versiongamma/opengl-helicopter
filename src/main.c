@@ -30,25 +30,42 @@ unsigned int frameStartTime = 0;
 GLUquadricObj* sphereQuadric;
 GLUquadricObj* cylinderQuadric;
 
+// Animated object parameters
 Helicopter helicopter;
+GLfloat waterHeight, waterOffset;
 
-MeshObject* loadedMesh;
-GLuint groundTexture;
+// Meshes and Textures
+MeshObject* pondModel;
+TreeModel treeModel01, treeModel02, treeModel03;
+GLuint treeDisplayList01, treeDisplayList02, treeDisplayList03;
+TreeObject trees[TREES_LENGTH];
+GLuint groundTexture, skyTexture, waterTexture;
 
 /******************************************************************************
  * Entry Point (don't put anything except the main function here)
  ******************************************************************************/
 
-void main(int argc, char **argv)
-{
+void main(int argc, char **argv) {
+	bool fullBright = FALSE;
+	if (argc > 1) {
+		fullBright = !strcmp(argv[1], "--fullbright");
+	}
+
 	// Initialize the OpenGL window.
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize(DEFAULT_WINDOW_WIDTH, DEFAULT_WINDOW_HEIGHT);
-	glutCreateWindow("Helicopter goes brrrrrrrrrrrrrr");
+	glutCreateWindow("OpenGL Drone | 19076935");
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	// Because it's taking a little over a second or two to load,
+	// I want to display something while it loads
+	drawText("Loading...", (Vec2) {DEFAULT_WINDOW_WIDTH / 2 - 45, DEFAULT_WINDOW_HEIGHT /2 });
+	glutSwapBuffers();
 
 	// Set up the scene.
 	init();
+	initLights(fullBright);
 
 	// Disable key repeat (keyPressed or specialKeyPressed will only be called once when a key is first pressed).
 	glutSetKeyRepeat(GLUT_KEY_REPEAT_OFF);
@@ -81,27 +98,28 @@ void main(int argc, char **argv)
 	 world. Animation (moving or rotating things, responding to keyboard input,
 	 etc.) should only be performed within the think() function provided below.
  */
-void display(void)
-{
+void display(void) {
 	// clear the screen and depth buffer
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	// load the identity matrix into the model view matrix
 	glLoadIdentity();
 
-
 	helicopterDisplay(&helicopter, cylinderQuadric, sphereQuadric);
-
-	glTranslatef(10, 0, 0);
-	renderMeshObject(loadedMesh);
+	
 	drawGround();
+	drawWater();
+	drawSky();
 
+	treesDisplay(trees, (GLuint[3]) { treeDisplayList01, treeDisplayList02, treeDisplayList03 });
 	glutSwapBuffers();
 }
 
 
 void close(void) {
-	freeMeshObject(loadedMesh);
+	treeClose(&treeModel01);
+	treeClose(&treeModel02);
+	treeClose(&treeModel03);
+	freeMeshObject(pondModel);
 }
 
 /*
@@ -141,22 +159,42 @@ void idle(void)
 	 Initialise OpenGL and set up our scene before we begin the render loop.
  */
 void init(void) {
+
+	srand(time(NULL));
 	
 	// enable depth testing
 	glEnable(GL_DEPTH_TEST);
-	
-	initLights();
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
 
 	sphereQuadric = gluNewQuadric();
 	cylinderQuadric = gluNewQuadric();
 
-	helicopter.position = (Vec3) { 0.0f, 1.0f, 0.0f };
+	helicopter.position = (Vec3) { -100.0f, 1.0f, 0.0f };
 	helicopter.velocity = (Vec3) { 0, 0, 0 };
 	helicopter.angle = 0.0f;
 	helicopter.rotorAngle = 0.0f;
+	helicopter.rotorAngularVelocity = 0.0f;
+	helicopter.startup = TRUE;
 
-	loadedMesh = loadMeshObject("assets/tree01.obj");
-	groundTexture = loadPPM("assets/ground_color.PPM");
+	waterHeight = -1;
+	waterOffset = -50;
+	
+	pondModel = loadMeshObject("plane.obj");
+	treeLoad(&treeModel01, "tree01trunk.obj", "tree01leaves.obj");
+	treeLoad(&treeModel02, "tree02trunk.obj", "tree02leaves.obj");
+	treeLoad(&treeModel03, "tree03trunk.obj", "tree03leaves.obj");
+
+	groundTexture = loadPPM("ground_color.PPM");
+	skyTexture = loadPPM("sky_color.ppm");
+	waterTexture = loadPPM("water_color.ppm");
+
+	generateTrees(trees);
+	treeDisplayList01 = treeGenerateDisplayList(&treeModel01);
+	treeDisplayList02 = treeGenerateDisplayList(&treeModel02);
+	treeDisplayList03 = treeGenerateDisplayList(&treeModel03);
+
 }
 
 /*
@@ -189,7 +227,11 @@ void think(void) {
 		controlQuaternion.y = getKeyboardState().Heave;
 	}
 
-	helicopterThink(&helicopter, controlQuaternion, FRAME_TIME_SEC );
+	helicopterThink(&helicopter, controlQuaternion, trees, FRAME_TIME_SEC );
+	const GLfloat x = FRAME_TIME_SEC * (GLfloat)frameStartTime / 10;
+	waterHeight = (sin(x) / 8) - 1;
+	waterOffset = waterOffset >= 50 ? -50 : waterOffset + 1 * FRAME_TIME_SEC;
+
 }
 
 /*
@@ -199,82 +241,164 @@ void think(void) {
 	off, or change colour) you may want to replace this with a drawLights function that gets called
 	at the beginning of display() instead of init().
 */
-void initLights(void)
-{
-	// Simple lighting setup
-	GLfloat globalAmbient[] = { 0.1f, 0.1f, 0.1f, 1 };
-	GLfloat lightPosition[] = { 0, 0, 0, 1.0f };
-	GLfloat ambientLight[] = { 0, 0, 0, 1 };
-	GLfloat diffuseLight[] = { 1, 1, 1, 1 };
-	GLfloat specularLight[] = { 1, 1, 1, 1 };
+void initLights(bool fullBright) {
 
-	// Configure global ambient lighting.
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
+	GLfloat light0position[] = { 0, 2, -13, 1 };
+	GLfloat light0diffuse[] = { 3.5, 3.5, 3.5, 1 };
+	GLfloat light0specular[] = { 0.2, 0.2, 0.2, 1 };
 
-	// Configure Light 0.
-	glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
-	glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight);
-	//glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 1.0);
+	GLfloat light1position[] = { 0, 2, -2, 1.0 };
+	GLfloat light1diffuse[] = { 15, 0, 0, 1.0 };
+	GLfloat light1specular[] = { 1.0, 1.0, 1.0, 1.0 };
 
-	glLightfv(GL_LIGHT1, GL_POSITION, (GLfloat[4]) { 0, 0, 0, 1 });
-	glLightfv(GL_LIGHT1, GL_AMBIENT, ambientLight);
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, (GLfloat[4]) { 1, 1, 0.2, 1 });
-	glLightfv(GL_LIGHT1, GL_SPECULAR, specularLight);
+	glClearColor(0, 0, 0, 0);
+	glShadeModel(GL_SMOOTH);
+	
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, light0diffuse);
+	glLightfv(GL_LIGHT0, GL_SPECULAR, light0specular);
+	glLightfv(GL_LIGHT0, GL_POSITION, light0position);
+	glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.5);
 
-	glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 45.0f);
-	//glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, (GLfloat[4]) { 1, 2, 0, 1 });
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, light1diffuse);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, light1specular);
+	glLightfv(GL_LIGHT1, GL_POSITION, light1position);
+	glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 2);
 
 
 	// Enable lighting
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	//glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHT1);
+
+	if (fullBright) {
+		glLightfv(GL_LIGHT2, GL_DIFFUSE, (GLfloat[4]) { 1, 1, 1, 1 });
+		glLightfv(GL_LIGHT2, GL_SPECULAR, light1specular);
+		glLightfv(GL_LIGHT2, GL_POSITION, (GLfloat[4]) { 0, 100, 0, 1 });
+		glEnable(GL_LIGHT2);
+	}
+
+	GLfloat fogColor[4] = { 0,0,0,1 };
+	glFogfv(GL_FOG_COLOR, fogColor);
+	glFogf(GL_FOG_MODE, GL_EXP);
+
+	glEnable(GL_FOG);
 
 	// Make GL normalize the normal vectors we supply.
 	glEnable(GL_NORMALIZE);
 
 }
 
-/****************************************************************************/
+void drawWater(void) {
+	glMaterialfv(GL_FRONT, GL_AMBIENT, (GLfloat[4]) { 0, 0, 0, 0 });
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, (GLfloat[4]) { 0.2, 0.4, 1, 0.8 });
+	glMaterialfv(GL_FRONT, GL_SPECULAR, (GLfloat[4]) { 1, 1, 1, 1 });
+	glMaterialf(GL_FRONT, GL_SHININESS, 80);
 
+	const GLfloat spacing = 5;
+
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, waterTexture);
+
+	glPushMatrix();
+	glRotatef(30, 0, 1, 0);
+	glTranslatef(waterOffset, 0, 0);
+	glBegin(GL_QUADS);
+	for (GLfloat x = -100; x <= 100; x += spacing) {
+		for (GLfloat z = -100; z <= 100; z += spacing) {
+
+			glVertex3d(x, waterHeight, z);
+			glNormal3d(0, 1, 0);
+			glTexCoord2f(0, 0);
+
+
+			glVertex3d(x + spacing, waterHeight, z);
+			glNormal3d(0, 1, 0);
+			glTexCoord2f(1, 0);
+
+
+			glVertex3d(x + spacing, waterHeight, z + spacing);
+			glNormal3d(0, 1, 0);
+			glTexCoord2f(1, 1);
+
+
+			glVertex3d(x, waterHeight, z + spacing);
+			glNormal3d(0, 1, 0);
+			glTexCoord2f(0, 1);
+
+		}
+	}
+	glEnd();
+	glPopMatrix();
+
+	glDisable(GL_TEXTURE_2D);
+}
+
+/****************************************************************************/
 void drawGround(void) {
 	glMaterialfv(GL_FRONT, GL_AMBIENT, (GLfloat[4]) { 0, 0, 0, 0 });
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, (GLfloat[4]) { 1, 1, 1, 1 });
 	glMaterialfv(GL_FRONT, GL_SPECULAR, (GLfloat[4]) { 1, 1, 1, 1 });
 	glMaterialf(GL_FRONT, GL_SHININESS, 5);
 
+	const GLfloat spacing = 5;
+
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, groundTexture);
+
 	glPushMatrix();
+	renderMeshObject(pondModel);
+	glPopMatrix();
 
+	glPushMatrix();
 	glBegin(GL_QUADS);
+	for (GLfloat x = -250; x <= 250; x += spacing) {
+		for (GLfloat z = -250; z <= 250; z += spacing) {
+			if (x < 40 && x > -40 && z < 40 && z > -40) {
+				continue;
+			}
 
-	for (GLint x = -250; x <= 250; x += 5) {
-		for (GLint z = -250; z <= 250; z += 5) {
-			glNormal3d(0, 1, 0);
-			glTexCoord2f(0, 0);
 			glVertex3d(x, 0, z);
 			glNormal3d(0, 1, 0);
+			glTexCoord2f(0, 0);
+
+
+			glVertex3d(x + spacing, 0, z);
+			glNormal3d(0, 1, 0);
 			glTexCoord2f(1, 0);
-			glVertex3d(x + 5, 0, z);
+
+
+			glVertex3d(x + spacing, 0, z + spacing);
 			glNormal3d(0, 1, 0);
 			glTexCoord2f(1, 1);
-			glVertex3d(x + 5, 0, z + 5);
+
+
+			glVertex3d(x, 0, z + spacing);
 			glNormal3d(0, 1, 0);
 			glTexCoord2f(0, 1);
-			glVertex3d(x, 0, z + 5);
 		}
 	}
 
 	glEnd();
-
 	glPopMatrix();
-
 	glDisable(GL_TEXTURE_2D);
 }
 
 void drawSky(void) {
+	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_TRUE);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, skyTexture);
 
+	glMaterialfv(GL_BACK, GL_EMISSION, (GLfloat[4]) { 1, 1, 1, 1 });
+	glMaterialfv(GL_BACK, GL_DIFFUSE, (GLfloat[4]) { 1, 1, 1, 1 });
+	glMaterialfv(GL_BACK, GL_SPECULAR, (GLfloat[4]) { 1, 1, 1, 1 });
+	gluQuadricTexture(sphereQuadric, TRUE);
+
+	glPushMatrix();
+	glRotatef(90, -1, 0, 0);
+	gluSphere(sphereQuadric, 250, 20, 20);
+	glPopMatrix();
+
+	gluQuadricTexture(sphereQuadric, FALSE);
+	glDisable(GL_TEXTURE_2D);
+	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, GL_FALSE);
 }

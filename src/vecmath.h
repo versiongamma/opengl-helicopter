@@ -2,6 +2,11 @@
 #include <freeglut.h>
 #include <math.h>
 
+/*
+ * <vecmath.c/vecmath.h> Defines general mathematical functions and vector types,
+ * as well as functions for handling vectors
+ */
+
 // Object type for 3D Vector (x, y, z)
 typedef struct VECTOR3 {
 	GLfloat x, y, z;
@@ -19,6 +24,10 @@ typedef struct QUATERNION {
 	GLfloat x, y, z, w;
 } Quat4;
 
+typedef struct COLOURRGB {
+	GLfloat r, g, b;
+} RGB;
+
 // Converts given degrees to radians
 GLfloat toRad(GLfloat degree);
 // Clamps a given angle between 0 and 360 degrees
@@ -29,3 +38,5 @@ GLfloat lerp(GLfloat a, GLfloat b, GLfloat t);
 Vec3 vec3Lerp(Vec3 a, Vec3 b, GLfloat t);
 // Rotates a given vector around the XZ plane by the given angle in degrees
 Vec3 rotateVectorXZ(Vec3 vector, GLfloat angle);
+// Returns the magintude on the XZ plane of a given vector
+GLfloat vec3XZMagnitude(Vec3 vector);
